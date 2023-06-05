@@ -1,7 +1,7 @@
 name = "SpatialHashing"
 uuid = "e2e8a281-5b48-4fd6-b542-65e07fde0794"
 authors = ["Alexander Barth <barth.alexander@gmail.com> and contributors"]
-version = "1.0.0-DEV"
+version = "0.1.0"
 
 [compat]
 julia = "1.6"

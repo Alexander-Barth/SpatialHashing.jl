@@ -80,9 +80,9 @@ function each_near(fun,x,search_range,spatial_index,visited)
 
             j = num_particles[i+1]
 
-            if !visited[j]
+            if visited[j] == 0
                 @inline fun(j)
-                visited[j] = true
+                visited[j] = 1
             end
         end
     end

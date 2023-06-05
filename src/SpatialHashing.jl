@@ -11,8 +11,12 @@ end
 
 indices(x,h) = unsafe_trunc.(Int,x ./ h) .+ 1
 
+"""
+    SpatialHashing.spatial_hash!(particles,h,limits,table,num_particles)
 
 
+Initialize the data structure for spatial hashing.
+"""
 function spatial_hash!(particles,h,limits,table,num_particles)
     table .= 0
     num_particles .= 0
@@ -53,6 +57,15 @@ function spatial_hash!(particles,h,limits,table,num_particles)
     return nothing
 end
 
+
+"""
+    index = SpatialHashing.spatial_hash(particles,h,limits)
+
+
+Initialize the data structure for spatial hashing using the vector
+of position `particles` and resolution `h`. The i-th coordinate is bounded by
+`0` and `limits[i]`.
+"""
 function spatial_hash(particles,h,limits)
     sz = unsafe_trunc.(Int,limits ./ h) .+ 1
     table = zeros(Int,prod(sz)+1)

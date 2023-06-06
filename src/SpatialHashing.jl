@@ -70,9 +70,10 @@ function spatial_hash(particles,h,limits)
     sz = unsafe_trunc.(Int,limits ./ h) .+ 1
     table = zeros(Int,prod(sz)+1)
     num_particles = zeros(Int,length(particles))
-    @time spatial_hash!(particles,h,limits,table,num_particles)
+    spatial_hash!(particles,h,limits,table,num_particles)
     return (; table, num_particles, h, sz)
 end
+
 
 function each_near(fun,x,search_range,spatial_index,visited)
     visited .= 0
@@ -84,16 +85,13 @@ function each_near(fun,x,search_range,spatial_index,visited)
         max(1,(ind[i]-search_range)):min(sz[i],(ind[i]+search_range))
     end
 
-    #@show search,sz
     for ind2 in CartesianIndices(search)
         l = hash(Tuple(ind2),length(table))
-        #@show ind2,sz,l,length(table)
         for i = table[l]:(table[l+1]-1)
-            # must inline to avoid allocation
-
             j = num_particles[i+1]
 
             if visited[j] == 0
+                # must inline to avoid allocation
                 @inline fun(j)
                 visited[j] = 1
             end

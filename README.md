@@ -5,8 +5,8 @@
 [![Build Status](https://github.com/Alexander-Barth/SpatialHashing.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Alexander-Barth/SpatialHashing.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 
-From a cloud of point in n-dimensional space,
-this module allows to identify all points near a given search points.
+From a cloud of points in an n-dimensional space,
+this package allows to identify all points near a given search points.
 The search is done using spatial hashing requiring `O(log(N))` operations per search
 where `N` is the number of points.
 

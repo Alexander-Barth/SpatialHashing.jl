@@ -26,7 +26,6 @@ See `SpatialHashing.spatial_hash` for explanations of the other parameters.
 function spatial_hash!(points,h,limits,table,num_points)
     table .= 0
     num_points .= 0
-    sz = unsafe_trunc.(Int,limits ./ h) .+ 1
 
     # count points with the same hash
     for i = 1:length(points)
@@ -35,30 +34,18 @@ function spatial_hash!(points,h,limits,table,num_points)
         table[l] += 1
     end
 
-
-    # # partial sums
-    # start = 0
-    # for i = 1:length(table)
-    #     start += table[i];
-    #     table[i] = start
-    # end
-    # table[end] = start
-
     # partial sums
     for i = 2:length(table)
         table[i] += table[i-1]
     end
 
     # fill-in
-
     for i = 1:length(points)
         ind = indices(points[i],h)
         l = hash(ind,length(table))
         table[l] -= 1
         num_points[table[l]+1] = i
     end
-
-   # table .+= 1
 
     return nothing
 end
@@ -106,7 +93,8 @@ with the same hash.
 """
 function spatial_hash(points,h,limits)
     sz = unsafe_trunc.(Int,limits ./ h) .+ 1
-    table = zeros(Int,prod(sz)+1)
+    max_table = prod(sz)+1
+    table = zeros(Int,max_table)
     num_points = zeros(Int,length(points))
     spatial_hash!(points,h,limits,table,num_points)
     return (; table, num_points, h, sz, limits)

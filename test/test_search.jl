@@ -18,7 +18,8 @@ for nparticles in (10,10000)
         rng = StableRNG(42)
         nparticles = 10000
         xpos = rand(N,nparticles)
-        particles = [(x=SVector(tuple(rand(rng,N)...)),) for i = 1:nparticles]
+        #particles = [(x=SVector(tuple(rand(rng,N)...)),) for i = 1:nparticles]
+        particles = [SVector(tuple(rand(rng,N)...)) for i = 1:nparticles]
 
         limits = (2,2)
 
@@ -63,7 +64,7 @@ for nparticles in (10,10000)
 
             @inline each_near(x,search_range,spatial_index,visited) do j
                 pj = particles[j]
-	            rij = pj.x - x
+	            rij = pj - x
 	            r2 = norm(rij)^2
 
 	            if r2 < r2max
@@ -83,7 +84,7 @@ for nparticles in (10,10000)
         for i = 1:length(particles)
             #@show i
             pi = particles[i]
-            x = pi.x
+            x = pi
 
             nfound = find_near!(spatial_index,particles,x,search_range,r2max,near_indices,visited)
 
@@ -94,7 +95,7 @@ for nparticles in (10,10000)
 
                 for j = 1:length(particles)
                     pj = particles[j]
-	                rij = pj.x - pi.x
+	                rij = pj - pi
 	                r2 = norm(rij)^2
 
 	                if r2 < r2max

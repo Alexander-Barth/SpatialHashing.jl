@@ -24,7 +24,7 @@ function spatial_hash!(particles,h,limits,table,num_particles)
 
     # count particles with the same hash
     for i = 1:length(particles)
-        ind = indices(particles[i].x,h)
+        ind = indices(particles[i],h)
         l = hash(ind,length(table))
         table[l] += 1
     end
@@ -46,7 +46,7 @@ function spatial_hash!(particles,h,limits,table,num_particles)
     # fill-in
 
     for i = 1:length(particles)
-        ind = indices(particles[i].x,h)
+        ind = indices(particles[i],h)
         l = hash(ind,length(table))
         table[l] -= 1
         num_particles[table[l]+1] = i

@@ -109,7 +109,7 @@ function spatial_hash(points,h,limits)
     table = zeros(Int,prod(sz)+1)
     num_points = zeros(Int,length(points))
     spatial_hash!(points,h,limits,table,num_points)
-    return (; table, num_points, h, sz)
+    return (; table, num_points, h, sz, limits)
 end
 
 """
@@ -120,9 +120,9 @@ the `points`. The number of points is assumed to be the same
 as during initialization with `SpatialHashing.spatial_hash`.
 """
 function update!(spatial_index,points)
-    table,num_points,h,sz = spatial_index
+    table,num_points,h,sz,limits = spatial_index
     spatial_hash!(points,h,limits,table,num_points)
-    return (; table, num_points, h, sz)
+    return (; table, num_points, h, sz, limits)
 end
 
 """
@@ -160,7 +160,7 @@ end
 """
 function each_near(fun,x,search_range,spatial_index,visited)
     visited .= 0
-    table,num_points,h,sz = spatial_index
+    table,num_points,h,sz,limits = spatial_index
     N = length(x)
     ind = indices(x,h)
 

@@ -129,7 +129,7 @@ end
     SpatialHashing.each_near(fun,x,search_range,spatial_index,visited)
 
 Evaluates `fun` for every index `j` in `points` which is near `x`.
-The search is limited to ±spatial_index grid cells.
+The search is limited to ± `spatial_index` around the grid cell containing `x`.
 The vector `visited` is an vector of booleans of the size `points`
 to keep track which points have been found so far.
 

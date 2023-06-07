@@ -16,3 +16,5 @@ The code is based on:
 
 
 The implementation is intended to use minimal dependencies (currently there are no dependencies) and compilable using the julia subset allowed by [GPUCompiler.jl](https://github.com/JuliaGPU/GPUCompiler.jl).
+
+Documentation is available [here](https://alexander-barth.github.io/SpatialHashing.jl/dev/).

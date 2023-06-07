@@ -1,10 +1,7 @@
 module SpatialHashing
 
-lindex(ind,offsets) = sum((ind .- 1) .* offsets) + 1
-
-
 function hash(ind,max)
-    # The 3 prime numbers are from:
+    # The 3 first prime numbers are from:
     # https://matthias-research.github.io/pages/publications/tetraederCollision.pdf
     large_primes = (73856093, 19349663, 83492791, 22335757, 98746231, 10000019)[1:length(ind)]
     return abs(reduce(xor,ind .* large_primes)) % (max-1) + 1

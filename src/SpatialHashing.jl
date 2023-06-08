@@ -10,17 +10,16 @@ end
 indices(x,h) = unsafe_trunc.(Int,x ./ h) .+ 1
 
 """
-    SpatialHashing.spatial_hash!(points,h,limits,table,num_points)
+    SpatialHashing.spatial_hash!(points,h,table,num_points)
 
 
 Initialize the data structure for spatial hashing in-place.
-`table` is a vector of integers with the length of
-`prod(trunc.(Int,limits ./ h) .+ 1)+1`, `num_points` is a vector
+`table` is a vector of integers with hashes, `num_points` is a vector
 of integers with the same length as `points`.
 
 See `SpatialHashing.spatial_hash` for explanations of the other parameters.
 """
-function spatial_hash!(points,h,limits,table,num_points)
+function spatial_hash!(points,h,table,num_points)
     table .= 0
     num_points .= 0
 
@@ -49,7 +48,7 @@ end
 
 
 """
-    spatial_index = SpatialHashing.spatial_hash(points,h,limits)
+    spatial_index = SpatialHashing.spatial_hash(points,h,max_table)
 
 
 Initialize the data structure `spatial_index` for spatial hashing using the vector
@@ -87,14 +86,18 @@ with the same hash.
    ┗━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━┛
  (0,0)
 ```
-"""
-function spatial_hash(points,h,limits)
+
     sz = unsafe_trunc.(Int,limits ./ h) .+ 1
     max_table = prod(sz)+1
+
+
+
+"""
+function spatial_hash(points,h,max_table)
     table = zeros(Int,max_table)
     num_points = zeros(Int,length(points))
-    spatial_hash!(points,h,limits,table,num_points)
-    return (; table, num_points, h, sz, limits)
+    spatial_hash!(points,h,table,num_points)
+    return (; table, num_points, h)
 end
 
 """
@@ -105,9 +108,9 @@ the `points`. The number of points is assumed to be the same
 as during initialization with `SpatialHashing.spatial_hash`.
 """
 function update!(spatial_index,points)
-    table,num_points,h,sz,limits = spatial_index
-    spatial_hash!(points,h,limits,table,num_points)
-    return (; table, num_points, h, sz, limits)
+    table,num_points,h = spatial_index
+    spatial_hash!(points,h,table,num_points)
+    return (; table, num_points, h)
 end
 
 """
@@ -145,12 +148,12 @@ end
 """
 function each_near(fun,x,search_range,spatial_index,visited)
     visited .= 0
-    table,num_points,h,sz,limits = spatial_index
+    table,num_points,h = spatial_index
     N = length(x)
     ind = indices(x,h)
 
     search = ntuple(N) do i
-        max(1,(ind[i]-search_range)):min(sz[i],(ind[i]+search_range))
+        (ind[i]-search_range):(ind[i]+search_range)
     end
 
     for ind2 in CartesianIndices(search)

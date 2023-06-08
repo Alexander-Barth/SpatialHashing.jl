@@ -52,9 +52,8 @@ end
 
 
 Initialize the data structure `spatial_index` for spatial hashing using the vector
-of position `points` and resolution `h`. The i-th coordinate is bounded by
-`0` and `limits[i]`. The list `points` is a iterable of coordinates such that
-the position of the j-th particle is given by `points[j]`.
+of position `points` and grid with resolution `h`. `max_table` is the length
+of the hash table (while size can be tuned to optimize the performance).
 
 The `index` allows to localize all points near a given reference point in
 `O(log(n))` operations where `n` is the number of points.
@@ -67,7 +66,7 @@ hash number is computed and the `index` keeps track of all `points`
 with the same hash.
 
 ```
-   <──h──>                           (limits[1],limits[2])
+   <──h──>
    ┏━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━┓
    ┃      │      │      │      │      │      ┃
    ┃      │      │      │      │      │      ┃
@@ -86,11 +85,6 @@ with the same hash.
    ┗━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━┷━━━━━━┛
  (0,0)
 ```
-
-    sz = unsafe_trunc.(Int,limits ./ h) .+ 1
-    max_table = prod(sz)+1
-
-
 
 """
 function spatial_hash(points,h,max_table)
@@ -128,11 +122,11 @@ index `j` is actually close as different grid cells may have the same hash
 The following is a complete example in 2 dimensions:
 
 ```julia
-npoints = 10000
+npoints = 200
 points = [Tuple(rand(2)) for i = 1:npoints]
 h = 0.1
-limits = (1,1)
-index = SpatialHashing.spatial_hash(points,h,limits)
+max_table = 50
+spatial_index = SpatialHashing.spatial_hash(points,h,max_table)
 x = (0.2,0.2)
 r2max = 0.1^2
 search_range = 1
@@ -140,9 +134,13 @@ visited = falses(npoints)
 SpatialHashing.each_near(x,search_range,spatial_index,visited) do j
    r2 = sum((points[j] .- x).^2)
    if r2 < r2max
-      println("point with index \$j is near (distance is \$(sqrt(r2)))")
+      println("point with index ",j," is near (distance is ",sqrt(r2),")")
    end
 end
+
+# the same indices as naive search
+
+filter(i -> sum((points[i] .- x).^2) < r2max,1:length(points))
 ```
 
 """

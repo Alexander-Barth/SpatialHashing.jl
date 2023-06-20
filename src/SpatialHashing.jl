@@ -1,7 +1,7 @@
 module SpatialHashing
 import Base: iterate
 
-function hash(ind::NTuple,max)
+function hash(ind,max)
     # The 3 first prime numbers are from:
     # https://matthias-research.github.io/pages/publications/tetraederCollision.pdf
     large_primes = (73856093, 19349663, 83492791, 22335757, 98746231, 10000019)[1:length(ind)]

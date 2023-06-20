@@ -27,8 +27,8 @@ function spatial_hash!(points,h,table,num_points)
     # count points with the same hash
     for i = 1:length(points)
         ind = indices(points[i],h)
-        l = hash(ind,length(table))
-        table[l] += 1
+        hashval = hash(ind,length(table))
+        table[hashval] += 1
     end
 
     # partial sums
@@ -39,9 +39,9 @@ function spatial_hash!(points,h,table,num_points)
     # fill-in
     for i = 1:length(points)
         ind = indices(points[i],h)
-        l = hash(ind,length(table))
-        table[l] -= 1
-        num_points[table[l]+1] = i
+        hashval = hash(ind,length(table))
+        table[hashval] -= 1
+        num_points[table[hashval]+1] = i
     end
 
     return nothing
@@ -155,9 +155,9 @@ function each_near(fun,x,search_range,spatial_index,visited)
         (ind[i]-search_range):(ind[i]+search_range)
     end
 
-    for ind2 in CartesianIndices(search)
-        l = hash(Tuple(ind2),length(table))
-        for i = table[l]:(table[l+1]-1)
+    for index_cell in CartesianIndices(search)
+        hashval = hash(Tuple(index_cell),length(table))
+        for i = table[hashval]:(table[hashval+1]-1)
             j = num_points[i+1]
 
             if visited[j] == 0
@@ -177,64 +177,46 @@ struct Iter{Tindex,Tx,T,Tv,Tc <: CartesianIndices}
     indices::Tc
 end
 
-function init_(it)
-    state1 = nothing
+function iterate(it,state__ = nothing)
+    state_cell = nothing
     inner = false
     next2 = nothing
     iter2 = nothing
     iii = 0
-    l = 0
-    next1 = iterate(it.indices)
+    hashval = 0
 
-    if next1 == nothing
-        return nothing
-    else
-        item1,state1 = next1
-        (item1,(state1,inner,next2,iter2,iii,l,next1))
-    end
-end
-
-function next_(it,state)
-    (state1,inner,next2,iter2,iii,l,next1) = state
-    if inner
-        iii += 1
-    else
-        next1 = iterate(it.indices, state1)
-    end
-
-
-    if next1 == nothing
-        return nothing
-    else
-        item1,state1 = next1
-        return (item1,(state1,inner,next2,iter2,iii,l,next1))
-    end
-end
-
-function iterate(it,state__ = nothing)
     if state__ == nothing
-        state1=inner=next2=iter2=iii=l=next1 = nothing
-        next = init_(it)
+        next_cell = iterate(it.indices)
     else
-        (next,state1,inner,next2,iter2,iii,l,next1) = state__
-        state_ = (state1,inner,next2,iter2,iii,l,next1)
-        next = next_(it,state_)
+        (next,state_cell,inner,next2,iter2,iii,hashval,next_cell) = state__
+        if inner
+            iii += 1
+        else
+            next_cell = iterate(it.indices, state_cell)
+        end
+    end
+
+    if next_cell == nothing
+        return nothing
+    else
+        index_cell,state_cell = next_cell
+        next = (index_cell,(state_cell,inner,next2,iter2,iii,hashval,next_cell))
     end
 
     visited = it.visited
 
     while next !== nothing
         table,num_points,h = it.spatial_index
-        ind2,state_ = next
-        (state1,inner,next2,iter2,iii,l,next1) = state_
+        index_cell,state_ = next
+        (state_cell,inner,next2,iter2,iii,hashval,next_cell) = state_
 
         if !inner
-            (ind2, state1) = next1
-            l = hash(Tuple(ind2),length(table))
-            iii = table[l]
+            (index_cell, state_cell) = next_cell
+            hashval = hash(Tuple(index_cell),length(table))
+            iii = table[hashval]
         end
 
-        if iii > table[l+1]-1
+        if iii > table[hashval+1]-1
             inner = false
         else
             inner = true
@@ -242,12 +224,24 @@ function iterate(it,state__ = nothing)
 
             if visited[j] == 0
                 visited[j] = 1
-                return (j,(next,state1,inner,next2,iter2,iii,l,next1))
+                return (j,(next,state_cell,inner,next2,iter2,iii,hashval,next_cell))
             end
         end
 
-        state_ = (state1,inner,next2,iter2,iii,l,next1)
-        next = next_(it,state_)
+        if inner
+            iii += 1
+        else
+            next_cell = iterate(it.indices, state_cell)
+        end
+
+
+        if next_cell == nothing
+            next = nothing
+        else
+            index_cell,state_cell = next_cell
+            next = (index_cell,(state_cell,inner,next2,iter2,iii,hashval,next_cell))
+        end
+
     end
 
     return nothing

@@ -157,8 +157,8 @@ function each_near(fun,x,search_range,spatial_index,visited)
 
     for index_cell in CartesianIndices(search)
         hashval = hash(Tuple(index_cell),length(table))
-        for i = table[hashval]:(table[hashval+1]-1)
-            j = num_points[i+1]
+        for index_element = table[hashval]:(table[hashval+1]-1)
+            j = num_points[index_element+1]
 
             if visited[j] == 0
                 # must inline to avoid allocation
@@ -185,27 +185,29 @@ function iterate(it,state = nothing)
     index_element = 0
     hashval = 0
 
-    if state == nothing
-        next_cell = iterate(it.indices)
+    if state !== nothing
+        (index_cell,state_cell,inner,index_element,hashval) = state
+    end
+
+    if inner
+        index_element += 1
     else
-        (state_cell,inner,index_element,hashval,next_cell) = state
-        if inner
-            index_element += 1
+        if state == nothing
+            next_cell = iterate(it.indices)
         else
             next_cell = iterate(it.indices, state_cell)
         end
+
+        if next_cell == nothing
+            return nothing
+        end
+        index_cell,state_cell = next_cell
     end
 
-    if next_cell == nothing
-        return nothing
-    end
-
-    index_cell,state_cell = next_cell
     visited = it.visited
+    table,num_points,h = it.spatial_index
 
     while true
-        table,num_points,h = it.spatial_index
-
         if !inner
             hashval = hash(Tuple(index_cell),length(table))
             index_element = table[hashval]
@@ -219,7 +221,7 @@ function iterate(it,state = nothing)
 
             if visited[j] == 0
                 visited[j] = 1
-                return (j,(state_cell,inner,index_element,hashval,next_cell))
+                return (j,(index_cell,state_cell,inner,index_element,hashval))
             end
         end
 
@@ -227,13 +229,13 @@ function iterate(it,state = nothing)
             index_element += 1
         else
             next_cell = iterate(it.indices, state_cell)
-        end
 
-        if next_cell == nothing
-            return nothing
-        end
+            if next_cell == nothing
+                return nothing
+            end
 
-        index_cell,state_cell = next_cell
+            index_cell,state_cell = next_cell
+        end
     end
 
     return nothing

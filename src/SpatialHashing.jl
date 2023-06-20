@@ -177,20 +177,20 @@ struct Iter{Tindex,Tx,T,Tv,Tc <: CartesianIndices}
     indices::Tc
 end
 
-function iterate(it,state__ = nothing)
+function iterate(it,state = nothing)
+    # outer loop over all cells
+    # inner loop within a cell over all elements
     state_cell = nothing
     inner = false
-    next2 = nothing
-    iter2 = nothing
-    iii = 0
+    index_element = 0
     hashval = 0
 
-    if state__ == nothing
+    if state == nothing
         next_cell = iterate(it.indices)
     else
-        (next,state_cell,inner,next2,iter2,iii,hashval,next_cell) = state__
+        (state_cell,inner,index_element,hashval,next_cell) = state
         if inner
-            iii += 1
+            index_element += 1
         else
             next_cell = iterate(it.indices, state_cell)
         end
@@ -198,50 +198,42 @@ function iterate(it,state__ = nothing)
 
     if next_cell == nothing
         return nothing
-    else
-        index_cell,state_cell = next_cell
-        next = (index_cell,(state_cell,inner,next2,iter2,iii,hashval,next_cell))
     end
 
+    index_cell,state_cell = next_cell
     visited = it.visited
 
-    while next !== nothing
+    while true
         table,num_points,h = it.spatial_index
-        index_cell,state_ = next
-        (state_cell,inner,next2,iter2,iii,hashval,next_cell) = state_
 
         if !inner
-            (index_cell, state_cell) = next_cell
             hashval = hash(Tuple(index_cell),length(table))
-            iii = table[hashval]
+            index_element = table[hashval]
         end
 
-        if iii > table[hashval+1]-1
+        if index_element > table[hashval+1]-1
             inner = false
         else
             inner = true
-            j = num_points[iii+1]
+            j = num_points[index_element+1]
 
             if visited[j] == 0
                 visited[j] = 1
-                return (j,(next,state_cell,inner,next2,iter2,iii,hashval,next_cell))
+                return (j,(state_cell,inner,index_element,hashval,next_cell))
             end
         end
 
         if inner
-            iii += 1
+            index_element += 1
         else
             next_cell = iterate(it.indices, state_cell)
         end
 
-
         if next_cell == nothing
-            next = nothing
-        else
-            index_cell,state_cell = next_cell
-            next = (index_cell,(state_cell,inner,next2,iter2,iii,hashval,next_cell))
+            return nothing
         end
 
+        index_cell,state_cell = next_cell
     end
 
     return nothing

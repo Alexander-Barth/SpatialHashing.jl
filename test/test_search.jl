@@ -1,4 +1,4 @@
-using SpatialHashing: spatial_hash!, spatial_hash, each_near
+using SpatialHashing: spatial_hash!, spatial_hash, each_near, inrange!
 using SpatialHashing
 using Test
 using LinearAlgebra
@@ -9,6 +9,23 @@ function find_near!(spatial_index,points,x,search_range,r2max,near_indices,visit
     nfound = 0
 
     @inline each_near(x,search_range,spatial_index,visited) do j
+        pj = points[j]
+	    rij = pj .- x
+	    r2 = norm(rij)^2
+
+	    if r2 < r2max
+            nfound += 1
+            @inbounds near_indices[nfound] = j
+        end
+    end
+    return nfound
+end
+
+
+function find_near_iter!(spatial_index,points,x,search_range,r2max,near_indices,visited)
+    nfound = 0
+
+    for j in inrange!(spatial_index,x,search_range,visited)
         pj = points[j]
 	    rij = pj .- x
 	    r2 = norm(rij)^2
@@ -40,6 +57,9 @@ N = 2
 
 for npoints in (10,1000)
     for h = (0.01, 0.4, 0.8)
+        local near, near_ref, x, nfound, spatial_index, max_table
+        local r2max, near_indices, search_range, rng, points, visited
+
         rng = StableRNG(42)
         points = [tuple(rand(rng,N)...) for i = 1:npoints]
 
@@ -58,6 +78,15 @@ for npoints in (10,1000)
             x = points[i]
 
             nfound = find_near!(spatial_index,points,x,search_range,r2max,near_indices,visited)
+            near = near_indices[1:nfound]
+
+            if i < 100
+                near_ref = find_near_naive(points,x,r2max)
+                @test Set(near_ref) == Set(near)
+            end
+
+            visited .= 0
+            nfound = find_near_iter!(spatial_index,points,x,search_range,r2max,near_indices,visited)
 
             near = near_indices[1:nfound]
 

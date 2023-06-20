@@ -1,4 +1,5 @@
 module SpatialHashing
+import Base: iterate
 
 function hash(ind,max)
     # The 3 first prime numbers are from:
@@ -167,5 +168,104 @@ function each_near(fun,x,search_range,spatial_index,visited)
         end
     end
 end
+
+struct Iter{Tindex,Tx,T,Tv,Tc <: CartesianIndices}
+    spatial_index::Tindex
+    x::Tx
+    search_range::T
+    visited::Tv
+    indices::Tc
+end
+
+function init_(it)
+    state1 = nothing
+    inner = false
+    next2 = nothing
+    iter2 = nothing
+    iii = 0
+    l = 0
+    next1 = iterate(it.indices)
+
+    if next1 == nothing
+        return nothing
+    else
+        item1,state1 = next1
+        (item1,(state1,inner,next2,iter2,iii,l,next1))
+    end
+end
+
+function next_(it,state)
+    (state1,inner,next2,iter2,iii,l,next1) = state
+    if inner
+        iii += 1
+    else
+        next1 = iterate(it.indices, state1)
+    end
+
+
+    if next1 == nothing
+        return nothing
+    else
+        item1,state1 = next1
+        return (item1,(state1,inner,next2,iter2,iii,l,next1))
+    end
+end
+
+function iterate(it,state__ = nothing)
+    if state__ == nothing
+        state1=inner=next2=iter2=iii=l=next1 = nothing
+        next = init_(it)
+    else
+        (next,state1,inner,next2,iter2,iii,l,next1) = state__
+        state_ = (state1,inner,next2,iter2,iii,l,next1)
+        next = next_(it,state_)
+    end
+
+    visited = it.visited
+
+    while next !== nothing
+        table,num_points,h = it.spatial_index
+        ind2,state_ = next
+        (state1,inner,next2,iter2,iii,l,next1) = state_
+
+        if !inner
+            (ind2, state1) = next1
+            l = hash(Tuple(ind2),length(table))
+            iii = table[l]
+        end
+
+        if iii > table[l+1]-1
+            inner = false
+        else
+            inner = true
+            j = num_points[iii+1]
+
+            if visited[j] == 0
+                visited[j] = 1
+                return (j,(next,state1,inner,next2,iter2,iii,l,next1))
+            end
+        end
+
+        state_ = (state1,inner,next2,iter2,iii,l,next1)
+        next = next_(it,state_)
+    end
+
+    return nothing
+end
+
+
+function inrange!(spatial_index,x,search_range,visited)
+    visited .= 0
+    table,num_points,h = spatial_index
+    N = length(x)
+    ind = indices(x,h)
+
+    search = ntuple(N) do i
+        (ind[i]-search_range):(ind[i]+search_range)
+    end
+
+    return Iter(spatial_index,x,search_range,visited,CartesianIndices(search))
+end
+
 
 end

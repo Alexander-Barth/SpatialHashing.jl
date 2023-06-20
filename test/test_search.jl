@@ -25,7 +25,7 @@ end
 function find_near_iter!(spatial_index,points,x,search_range,r2max,near_indices,visited)
     nfound = 0
 
-    for j in inrange!(spatial_index,x,search_range,visited)
+    @inbounds for j in inrange!(spatial_index,x,search_range,visited)
         pj = points[j]
 	    rij = pj .- x
 	    r2 = norm(rij)^2
@@ -122,3 +122,28 @@ near = near_indices[1:nfound]
 
 near_ref = find_near_naive(points,x,r2max)
 @test Set(near_ref) == Set(near)
+
+
+# performance
+rng = StableRNG(42)
+h = 0.1
+N = 2
+r2max = 0.1
+npoints = 1000000
+points = [tuple(rand(rng,N)...) for i = 1:npoints]
+max_table = 500
+visited = zeros(Int,npoints)
+spatial_index = spatial_hash(points,h,max_table)
+points = [tuple(rand(rng,N)...) for i = 1:npoints]
+
+near_indices = zeros(Int,length(points))
+nfound = find_near!(spatial_index,points,x,search_range,r2max,near_indices,visited)
+nfound = @time find_near!(spatial_index,points,x,search_range,r2max,near_indices,visited)
+near = Set(near_indices[1:nfound])
+
+near_indices = zeros(Int,length(points))
+nfound = find_near_iter!(spatial_index,points,x,search_range,r2max,near_indices,visited)
+nfound = @time find_near_iter!(spatial_index,points,x,search_range,r2max,near_indices,visited)
+near_iter = Set(near_indices[1:nfound])
+
+@test near_iter == near

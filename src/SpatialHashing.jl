@@ -1,12 +1,14 @@
 module SpatialHashing
 import Base: iterate
 
-function hash(ind,max)
+function hash(ind::NTuple,max)
     # The 3 first prime numbers are from:
     # https://matthias-research.github.io/pages/publications/tetraederCollision.pdf
     large_primes = (73856093, 19349663, 83492791, 22335757, 98746231, 10000019)[1:length(ind)]
     return abs(reduce(xor,ind .* large_primes)) % (max-1) + 1
 end
+
+hash(ind::CartesianIndex,max) = hash(Tuple(ind),max)
 
 indices(x,h) = unsafe_trunc.(Int,x ./ h) .+ 1
 
@@ -155,8 +157,8 @@ function each_near(fun,x,search_range,spatial_index,visited)
         (ind[i]-search_range):(ind[i]+search_range)
     end
 
-    for index_cell in CartesianIndices(search)
-        hashval = hash(Tuple(index_cell),length(table))
+    @inbounds for index_cell in CartesianIndices(search)
+        hashval = hash(index_cell,length(table))
         for index_element = table[hashval]:(table[hashval+1]-1)
             j = num_points[index_element+1]
 
@@ -169,7 +171,7 @@ function each_near(fun,x,search_range,spatial_index,visited)
     end
 end
 
-struct Iter{Tindex,Tx,T,Tv,Tc <: CartesianIndices}
+struct Iter{N,Tindex,Tx,T,Tv,Tc <: CartesianIndices{N}}
     spatial_index::Tindex
     x::Tx
     search_range::T
@@ -177,16 +179,19 @@ struct Iter{Tindex,Tx,T,Tv,Tc <: CartesianIndices}
     indices::Tc
 end
 
-function iterate(it,state = nothing)
+function iterate(it::Iter{N},
+                 state = nothing
+                 ) where N
     # outer loop over all cells
     # inner loop within a cell over all elements
-    state_cell = nothing
+    index_cell = CartesianIndex{N}()
+    state_cell = CartesianIndex{N}()
     inner = false
     index_element = 0
-    hashval = 0
+    max_index = 0
 
     if state !== nothing
-        (index_cell,state_cell,inner,index_element,hashval) = state
+        (index_cell,state_cell,inner,index_element,max_index) = state
     end
 
     if inner
@@ -209,19 +214,20 @@ function iterate(it,state = nothing)
 
     while true
         if !inner
-            hashval = hash(Tuple(index_cell),length(table))
-            index_element = table[hashval]
+            hashval = hash(index_cell,length(table))
+            index_element = @inbounds table[hashval]
+            max_index = @inbounds table[hashval+1]-1
         end
 
-        if index_element > table[hashval+1]-1
+        if index_element > max_index
             inner = false
         else
             inner = true
-            j = num_points[index_element+1]
+            j = @inbounds num_points[index_element+1]
 
             if visited[j] == 0
                 visited[j] = 1
-                return (j,(index_cell,state_cell,inner,index_element,hashval))
+                return (j,(index_cell,state_cell,inner,index_element,max_index))
             end
         end
 
@@ -237,8 +243,6 @@ function iterate(it,state = nothing)
             index_cell,state_cell = next_cell
         end
     end
-
-    return nothing
 end
 
 
